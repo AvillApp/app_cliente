@@ -69,7 +69,7 @@ export default function SideMenu({ navigation }) {
     const remove = await AsyncStorage.removeItem("id_user");
     const id_user2 = await AsyncStorage.getItem("id_user");
     const id_pedido = await AsyncStorage.removeItem("id_pedido");
- 
+
     if (!id_user2) navigation.navigate("auth");
   };
 
@@ -109,6 +109,17 @@ export default function SideMenu({ navigation }) {
           >
             <Text>Recomendaciones</Text>
           </ListItem> */}
+          <ListItem
+            onPress={() =>
+              navigation.navigate("External", {
+                url: "https://www.avill.com.co/ayuda/",
+                title: "Ayuda",
+                ishome: true,
+              })
+            }
+          >
+            <Text>Ayuda</Text>
+          </ListItem>
           <ListItem
             onPress={() =>
               navigation.navigate("External", {

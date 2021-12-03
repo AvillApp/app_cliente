@@ -1,6 +1,5 @@
 import React from "react";
-import { Container } from "native-base";
-
+import { Text, View, Container } from "native-base";
 import LoginForm from "../../Forms/LoginForm";
 import CustomHeader from "../CustomHeader";
 

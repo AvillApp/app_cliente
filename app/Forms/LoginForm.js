@@ -8,13 +8,12 @@ import {
   Dimensions,
   Text,
 } from "react-native";
-import axios from "axios";
 import { Content, Form, Item, Input, Label, Icon } from "native-base";
 // import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import AppButton from "../Lib/plug/AppButton";
 import Loading from "../Lib/plug/Loading";
 import ErrorMessage from "../Lib/plug/Error";
-import { api } from "../Lib/utils/db";
+import API from "../Lib/utils/db";
 import { MARCA } from "../Constans/imagenes";
 
 const { height } = Dimensions.get("window");
@@ -29,44 +28,43 @@ export default function LoginForm({ navigation }) {
     const id_user = await AsyncStorage.getItem("id_user");
     const id_pedido = await AsyncStorage.getItem("id_pedido");
     if (id_user) navigation.navigate("app");
-    if (id_pedido) navigation.navigate("Estado")
-
-      // if(location){
-      //   if (id_user) navigation.navigate("app");
-      //   if (id_pedido) navigation.navigate("Estado")
-      // }
-    
+    if (id_pedido) {
+      navigation.navigate("Estado", {
+        Direccion: "New",
+        Pedido: id_pedido,
+      });
+    }
   };
   obtenerUser();
 
-
-  const Loguear = async (id,nom) => {
+  const Loguear = async (id, nom, ape, token) => {
+    //console.log("info: ", id);
     await AsyncStorage.setItem("id_user", id.toString());
     await AsyncStorage.setItem("nombre", nom.toString());
+    await AsyncStorage.setItem("apellidos", ape.toString());
+
+    const payload = {
+      tokenPush: token,
+      name: nom,
+      last_name: ape,
+    };
+    const response2 = await API.put(`accounts/${id}/`, payload);
     navigation.navigate("app");
-  }
+  };
 
   const autentication = async () => {
-    // console.log("Validando2");
+    const tokenPush = await AsyncStorage.getItem("tokenPush");
+    //const tokenPush = "LAGO";
     setIsVisibleLoading(true);
 
-   // axios.get('/user?ID=12345')
-    axios.get(`${api}personas/buscar/${telefono}?format=json`)
-        .then(response => {
+    const response = await API.get(`accounts/?phone=${telefono}&format=json`);
 
-          let data;
-          let nom;
-          response.data.map(dt => {
-              data = dt.id;
-              nom = dt.name;
-          })
-
-          Loguear(data,nom)
-          
-        }).catch(error=>{
-           setError(true);
-     })
-
+    response.data.map((dt) => {
+      data = dt.id;
+      nom = dt.name;
+      ape = dt.last_name;
+    });
+    Loguear(data, nom, ape, tokenPush);
     setIsVisibleLoading(false);
   };
 
@@ -105,9 +103,8 @@ export default function LoginForm({ navigation }) {
             />
           </Item>
         </Form>
-      
+
         <View style={styles.butt}>
-           
           <AppButton action={autentication} title="Ingresar" />
         </View>
 
@@ -118,16 +115,17 @@ export default function LoginForm({ navigation }) {
         </View>
 
         <View style={styles.txt}>
-          <Text style={styles.txt} 
-              onPress={() =>
-                navigation.navigate("External2", {
-                  url: "https://www.avill.com.co/privacy/",
-                  title: "Términos y condiciones",
-                  ishome: false,
-                })
-              }
+          <Text
+            style={styles.txt}
+            onPress={() =>
+              navigation.navigate("External2", {
+                url: "https://www.avill.com.co/privacy/",
+                title: "Términos y condiciones",
+                ishome: false,
+              })
+            }
           >
-           Términos y condiciones
+            Términos y condiciones
           </Text>
         </View>
         <Loading text="Iniciando sesión" isVisible={isVisibleLoading} />

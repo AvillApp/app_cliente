@@ -20,8 +20,12 @@
     },
     "android": {
       "package": "com.avill.io",
-      "versionCode": 2,
-      "permissions": []
+      "versionCode": 4,
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
+      "useNextNotificationsApi": true,
+      "googleServicesFile": "./google-services.json"
     }
   }
 }

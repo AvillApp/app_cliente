@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "801246072657",
+    "project_id": "avillcliente",
+    "storage_bucket": "avillcliente.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:801246072657:android:6dcbfca6249a32a8270d70",
+        "android_client_info": {
+          "package_name": "com.avill.io"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "801246072657-kajqta9ipb0e012jfioinrkrlqe83fo1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMWSgeAmW21Cc7Osydi38O388IWCvbMLM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "801246072657-kajqta9ipb0e012jfioinrkrlqe83fo1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

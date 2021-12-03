@@ -16,6 +16,7 @@ import AppButton from "../Lib/plug/AppButton";
 import Loading from "../Lib/plug/Loading";
 import ErrorMessage from "../Lib/plug/Error";
 import { api } from "../Lib/utils/db";
+import API from "../Lib/utils/db";
 import axios from "axios";
 //import * as Location from 'expo-location'
 //import Constants from 'expo-constants'
@@ -27,7 +28,7 @@ const { height } = Dimensions.get("window");
 export default function ConfirmarForm({ navigation, direccion, emision }) {
   const [indicacion, setIndicacion] = useState("");
   const [telefono, setTelefono] = useState("");
-  
+
   const [Direccion, setDireccion] = useState(direccion);
   const [Emision, setEmision] = useState(emision);
 
@@ -40,120 +41,149 @@ export default function ConfirmarForm({ navigation, direccion, emision }) {
   const [latitude, setLatitude] = useState("");
 
   const [tiposervicio, setTipoServicio] = useState();
-  const [listTipoServ, setListTipoServ] = useState([])
+  const [listTipoServ, setListTipoServ] = useState([]);
 
   const [servicio, setServicio] = useState();
   const [listServicio, setListservicio] = useState([]);
 
-
-  /*const buscarLocation = async () => {
-    const { status } = await Location.requestPermissionsAsync()
-    if (status !== 'granted'){
-      return Alert.alert('No tenemos los permisos necesarios para acceder a la localizacion')
-    }
-    const Locat = await Location.getCurrentPositionAsync({})
-    setLocation(Locat)
-
-    setLatitude(Locat.coords.latitude)
-    setLongitude(Locat.coords.longitude)
-  }*/
-
   useEffect(() => {
-
-    const fetch = async () =>{
-      const infoTipoServ = await axios(
-        `${api}tipos_servicios?format=json`
-      );
-      //console.log(infoTipoServ.data)
-      setListTipoServ(infoTipoServ.data)
-    }
-    fetch()
-   // buscarLocation()
-  }, [])
+    const fetch = async () => {
+      const response = await API.get(`typeservices?format=json`);
+      setListTipoServ(response.data);
+    };
+    fetch();
+    // buscarLocation()
+  }, []);
 
   const handleTipo = async (value) => {
-
     setTipoServicio(value);
 
-    const fetch = async () =>{
-      const infoTipoServ2 = await axios(
-        `${api}servicios/buscar/${value}?format=json`
+    const fetch = async () => {
+      const response = await API.get(
+        `services/?type_servicios=${value}&format=json`
       );
-      //console.log(infoTipoServ.data)
-      setListservicio(infoTipoServ2.data)
-    }
-    fetch()
+      setListservicio(response.data);
+    };
+    fetch();
   };
 
+  // const ObtenerPedido = async (id) => {
+  //   const response = await API.get(`orders/${id}/?format=json`);
+  //   // const infoUser = await fetch(`${api}orders/${id}/?format=json`);
+  //   //const resUser = await infoUser.json();
 
+  //   let data = response.data.id;
+  //   response.data.map((dt) => {
+  //     data = dt.id;
+  //   });
+  //   //console.log("id_pedido: ", data);
 
+  //   await AsyncStorage.setItem("id_pedido", data.toString());
 
-  const ObtenerPedido = async (id) => {
+  //   // Enviamos primera información
+  //   const titulo = "Solicitud de servicio seguro ";
+  //   const descripcion = "Haz solicitado un(a) " + servicio;
 
-    const infoUser = await fetch(
-      `${api}pedidos/buscar/${id}?format=json`
-    );
-    const resUser = await infoUser.json();
-    
-    let data;
-    resUser.map(dt => {
-      data = dt.id;
-     
-    })
+  //   const logs_pedido = {
+  //     title: titulo,
+  //     description: descripcion,
+  //     pedido: parseInt(data),
+  //     realizado_by: parseInt(id),
+  //   };
 
-     await AsyncStorage.setItem("id_pedido", data.toString());
+  //   const response2 = await API.post(`activiorders/`, logs_pedido);
+  //   navigation.navigate("Estado", {
+  //     Direccion: Direccion,
+  //     Pedido: data,
+  //   });
 
-     // Enviamos primera información
-     const titulo = "Solicitud de servicio seguro "
-     const descripcion = "Haz solicitado un(a) " + servicio
+  //   // axios
+  //   //   .post(`${api}activiorders/`, logs_pedido)
+  //   //   .then((response) => {
+  //   //     navigation.navigate("Estado", {
+  //   //       Direccion: Direccion,
+  //   //       Pedido: data,
+  //   //     });
+  //   //   })
+  //   //   .catch((error) => {
+  //   //     console.log(error);
+  //   //   });
+  // };
 
-     const logs_pedido = {
-      "title": titulo,
-      "description": descripcion,
-      "pedido": parseInt(data),
-      "realizado_by": parseInt(id)
-     }
-     axios.post(`${api}pedidos_acti/create/`, logs_pedido)
-        .then(response => {
-          navigation.navigate("Estado", { Direccion: Direccion });
-          
-        }).catch(error=>{
-          console.log(error)
-        })
-     
-  }
+  const NotifiyPush = async (tokenPush, body) => {
+    // console.log("Ingresó aquí");
+    // console.log("Token del conductor: ", tokenPush);
+    const message = {
+      to: tokenPush,
+      sound: "default",
+      title: "Avill",
+      body: body,
+      data: { someData: "goes here" },
+    };
+    console.log("enviando msg: ", message);
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+  };
 
   const NuevoPedido = async () => {
-    if (Direccion && indicacion) {
+    if (Direccion && indicacion && telefono) {
       setIsVisibleLoading(true);
       //if (telefono === "") setTelefono(0);
       const id_user = await AsyncStorage.getItem("id_user");
-      const token_push = await AsyncStorage.getItem("token_push");
+      // const token_push = await AsyncStorage.getItem("token_push");
 
       const pedido = {
-        'emision': Emision,
-        'destino': Direccion,
-        'indicacion': indicacion,
-        'longitude': longitude,
-        'latitude': latitude,
-        'telealt': parseInt(telefono),
-        'estado': 3,
-        'personas': parseInt(id_user),
-        'solicitud': servicio,
-      }
+        emision: Emision,
+        destino: Direccion,
+        indicacion: indicacion,
+        longitude: longitude,
+        latitude: latitude,
+        telealt: parseInt(telefono),
+        estado: 3,
+        account: parseInt(id_user),
+        solicitud: servicio,
+      };
+      //console.log(pedido);
+      const response2 = await API.post(`orders/`, pedido);
+      //console.log(response2.data);
+      //await ObtenerPedido(id_user);
 
-     //  console.log(pedido)
-      axios.post(`${api}pedidos/create/`, pedido)
-        .then(response => {
+      await AsyncStorage.setItem("id_pedido", response2.data.id.toString());
 
-          ObtenerPedido(id_user) 
-          
-        }).catch(error=>{
-          console.log(error)
-           setError(true);
-        })
+      // Enviamos primera información
+      const titulo = "Solicitud de servicio seguro ";
+      const descripcion = "Haz solicitado un(a) " + servicio;
 
+      const logs_pedido = {
+        title: titulo,
+        description: descripcion,
+        pedido: parseInt(response2.data.id),
+        realizado_by: parseInt(id_user),
+      };
       setIsVisibleLoading(false);
+      const response3 = await API.post(`activiorders/`, logs_pedido);
+
+      // Mandar ordenes a los conductores solo activos o disponibles
+      const response4 = await API.get(
+        `accounts/?type_persona=3&estado=1&format=json`
+      );
+      //console.log(response4.data);
+      response4.data.map((dt) => {
+        if (dt.tokenPush !== "")
+          NotifiyPush(dt.tokenPush, "Hay un nuevo pedido en espera");
+      });
+      navigation.navigate("Estado", {
+        Direccion: Direccion,
+        Pedido: response2.data.id,
+      });
     } else setError(true);
   };
 
@@ -215,16 +245,16 @@ export default function ConfirmarForm({ navigation, direccion, emision }) {
           onChange={(e) => setIndicacion(e.nativeEvent.text)}
         />
         <Label style={{ marginLeft: 10, fontSize: 15 }}>Tipo de Servicio</Label>
-       
+
         <Picker
-              mode="dropdown"
-              style={{ marginLeft: 10, width: 350 }}
-              selectedValue={tiposervicio}
-              onValueChange={handleTipo}
-            >
-              {listTipoServ.map((serv) => (
-                <Picker.Item key={serv.id} label={serv.nombre} value={serv.id} />
-              ))}
+          mode="dropdown"
+          style={{ marginLeft: 10, width: 350 }}
+          selectedValue={tiposervicio}
+          onValueChange={handleTipo}
+        >
+          {listTipoServ.map((serv) => (
+            <Picker.Item key={serv.id} label={serv.nombre} value={serv.id} />
+          ))}
         </Picker>
 
         <Label style={{ marginLeft: 10, fontSize: 15 }}>
@@ -237,7 +267,11 @@ export default function ConfirmarForm({ navigation, direccion, emision }) {
           onValueChange={(itemValue, itemIndex) => setServicio(itemValue)}
         >
           {listServicio.map((datos2) => (
-            <Picker.Item key={datos2.id} label={datos2.nombre} value={datos2.nombre} />
+            <Picker.Item
+              key={datos2.id}
+              label={datos2.nombre}
+              value={datos2.nombre}
+            />
           ))}
         </Picker>
       </Form>

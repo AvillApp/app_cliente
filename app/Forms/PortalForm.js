@@ -11,9 +11,14 @@ export default function PortalForm({ navigation }) {
   const [Direccion, setDireccion] = useState();
 
   const NuevoPedido = () => {
+    const dir = Direccion;
+    const emi = Emision;
+    setDireccion("");
+    setEmision("");
+
     navigation.navigate("Confirmar", {
-      emision: Emision,
-      direccion: Direccion,
+      emision: emi,
+      direccion: dir,
     });
   };
   return (
@@ -24,11 +29,11 @@ export default function PortalForm({ navigation }) {
         alignItems: "center",
       }}
     >
-      <Push></Push>
       <Form style={styles.form}>
         <Item floatingLabel>
           <Label style={{ fontSize: 15 }}>Donde estás?</Label>
           <Input
+            value={Emision}
             onChange={(e) => setEmision(e.nativeEvent.text)}
             style={{ fontSize: 20 }}
           />
@@ -36,6 +41,7 @@ export default function PortalForm({ navigation }) {
         <Item floatingLabel>
           <Label style={{ fontSize: 15 }}>Hacia donde vamos?</Label>
           <Input
+            value={Direccion}
             onChange={(e) => setDireccion(e.nativeEvent.text)}
             style={{ fontSize: 20 }}
           />

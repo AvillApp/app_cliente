@@ -1,105 +1,258 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Image, AsyncStorage } from "react-native";
-import Timeline from "react-native-timeline-flatlist";
-import { Container, List, ListItem, Thumbnail, Left, Right } from "native-base";
-//import PushNotification from "react-native-push-notification";
-//import ShareSocial from "../Share";
+import { Container, Text, Picker } from "native-base";
 import CustomHeader from "../CustomHeader";
 import Popup from "../../Lib/plug/Popup";
-import { ICONOS } from "../../Constans/imagenes";
-import { api } from "../../Lib/utils/db";
-import axios from "axios";
+import API from "../../Lib/utils/db";
+import StepIndicator from "react-native-step-indicator";
+import { Avatar, List } from "react-native-paper";
+import { Rating, AirbnbRating } from "react-native-ratings";
+import Calificar from "./Calificar";
 
 export default function Estado({ navigation }) {
   const [isVisibleLoading, setIsVisibleLoading] = useState(false);
-  const [data, setData] = useState();
   const [txt, setTxt] = useState();
-  const Direccion = navigation.getParam("Direccion");
+  const id_pedido = navigation.getParam("Pedido");
 
-  const title = "" + Direccion;
+  const [infoViaje, setInfoViaje] = useState({
+    creado: "",
+    direccion: "",
+    observacion: "",
+    telefono: "",
+    precio: "",
+    id: "",
+  });
+  const [conductor, setConductor] = useState({
+    nombre: "",
+    placa: "",
+    photo: "",
+    tiempo: "",
+    tokenPush: "",
+    id: "",
+  });
+  const [seguimiento, setSeguimiento] = useState(1); // Estado en espera
+  const [searchInfo, setSearchInfo] = useState(true);
+  const [searchSegui, setSearchSegui] = useState(true);
 
-  // Para mostrar los logs y saber el estado del pedido
-  const getIdpedido = async () => {
-    const id_pedido = await AsyncStorage.getItem("id_pedido");
+  //const title = "" + Direccion;
+  const title = "Seguimiento de viaje";
+  //console.log("Id de Pedido: ", navigation.getParam("Pedido"));
 
-    if (id_pedido) {
-      const id_user = await AsyncStorage.getItem("id_user");
-      
-      // api/pedidos_acti/<pedido>/</pedido>
-      const response2 = await fetch(
-        `${api}pedidos_acti/${id_pedido}`
-      );
-      const logs = await response2.json();
-      //console.log(logs)
+  const infoPedido = async (id) => {
+    const response = await API.get(`orders/${id}/?format=json`);
+    return response.data;
+  };
+  const [seguiEstado, setSeguiEstado] = useState();
+  const Changed2Estado = async (est, conductor) => {
+    setSeguiEstado(est);
+    const pedido_change = {
+      estado: est,
+    };
+    // console.log(pedido_change);
+    //console.log("token del conductor2: ", conductor.tokenPush);
+    await API.put(`ordersup/${id_pedido}/`, pedido_change);
+    await API.put(`accounts/${conductor}/`, {
+      estado: 1,
+    });
 
-      setData(logs); // Logs
-
-      // Obtenemos el estado del pedido.
-
-      const infoUser = await fetch(
-        `${api}pedidos/buscar/${id_user}?format=json`
-      );
-      const resUser = await infoUser.json();
-      
-      //console.log(resUser)
-      let estado_ped;
-      let placa;
-      let precio;
-      let photo;
-      let conductor;
-      let tiempo;
-      resUser.map(dt => {
-        estado_ped = dt.estado;
-        
-        //console.log("Valor el vehiculo", dt.vehiculo)
-
-        if(dt.vehiculo!=null){
-          placa = dt.vehiculo.placa
-          photo = dt.vehiculo.photo
-          tiempo = dt.tiempo
-          precio = dt.precio
-          conductor=dt.vehiculo.persona.name
-        }
-      })
-
-
-        if (estado_ped == 5) {
-          setIsVisibleLoading(true);
-          //setPrecio(estado_pedido.precio); // Conductor disponible
-          setTxt(
-            "¿Aceptar pedido? \n \n Valor:" +
-              precio +
-              "\n Placa: " +
-              placa +
-              "\n Tiempo: " +
-              tiempo +
-              "\n Conductor: " +
-              conductor
-          );
-        } else if (estado_ped == 6) {
-          await AsyncStorage.removeItem("id_pedido");
-          // Viaje terminado
-          navigation.navigate("Inicio");
-        } else if (estado_ped == 4) {
-          await AsyncStorage.removeItem("id_pedido");
-          // Viaje cancelado.
-          navigation.navigate("Inicio");
-        } else setIsVisibleLoading(false);
-    }
-    
-
+    NotifiyPush(conductor.tokenPush, "El cliente ha confirmado tu viaje!");
+    //console.log("resultado: ", response.data);
   };
 
-  const HandleCalificar = () => {
-    navigation.navigate("Calificar", { Idpedido });
+  const NotifiyPush = async (tokenPush, body) => {
+    // console.log("Ingresó aquí");
+    // console.log("Token del conductor: ", tokenPush);
+    const message = {
+      to: tokenPush,
+      sound: "default",
+      title: "Avill",
+      body: body,
+      data: { someData: "goes here" },
+    };
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+  };
+
+  // Para mostrar los logs y saber el estado del pedido
+  const getInfo = async () => {
+    //const id_pedido = await AsyncStorage.getItem("id_pedido");
+
+    if (id_pedido) {
+      const resUser = await infoPedido(id_pedido);
+
+      if (infoViaje.creado === "") {
+        setInfoViaje({
+          creado: resUser.created,
+          direccion: resUser.destino,
+          observacion: resUser.indicacion,
+          telefono: resUser.telealt,
+          precio: resUser.precio,
+          id: resUser.account,
+        });
+      }
+      if (resUser.vehiculo.persona.name !== "") {
+        if (conductor.nombre === "") {
+          setConductor({
+            nombre:
+              resUser.vehiculo.persona.name +
+              " " +
+              resUser.vehiculo.persona.last_name,
+            placa: resUser.vehiculo.placa,
+            photo: resUser.vehiculo.persona.photo.photo,
+            tiempo: resUser.tiempo,
+            tokenPush: resUser.vehiculo.persona.tokenPush,
+            id: resUser.vehiculo.persona.id,
+          });
+          setSearchInfo(false);
+        }
+      }
+
+      if (resUser.estado === 7 || resUser.estado === 8) {
+        // Finalizado o cancelado
+        // Viaje finalizaado
+        setSearchSegui(false);
+        setSeguimiento(5);
+        setIsVisibleLoading(false);
+        await AsyncStorage.removeItem("id_pedido");
+
+        const data = await API.get(
+          `ratting/order/?pedido=${id_pedido}&format=json`
+        );
+        //console.log("Info: de califiación pedido: ", data.data);
+
+        if (data.data[0].puntos > 0) {
+          setPuntos(data.data.puntos);
+          setDisableRatting(true);
+        }
+      }
+
+      if (resUser.estado === 8) {
+        // Cancelado
+        // Viaje finalizaado
+        setSearchSegui(false);
+        setSeguimiento(5);
+        setIsVisibleLoading(false);
+        await AsyncStorage.removeItem("id_pedido");
+      }
+
+      if (resUser.estado === 6)
+        // En viaje
+        setSeguimiento(4);
+      if (resUser.estado === 5)
+        // En camino
+        setSeguimiento(3);
+
+      if (resUser.estado === 4) {
+        // Confirmado
+        setSeguimiento(2);
+        setSearchSegui(true); // Sincronice estado
+        setIsVisibleLoading(false);
+      }
+      if (resUser.estado === 3)
+        // En espera
+        setSeguimiento(1);
+
+      if (resUser.estado === 9) {
+        // Por confirmar por parte del cliente (Conductor disponible)
+        setIsVisibleLoading(true);
+        setTxt(
+          "¿Aceptar pedido? \n \n Valor:" +
+            resUser.precio +
+            "\n Tiempo: " +
+            resUser.tiempo
+        );
+        setSearchSegui(false); // No sincronice por el momento.
+      }
+    }
   };
 
   // Para actualizar el estado de lo que va ocurriendo en el pedido.
   useEffect(() => {
-    setInterval(() => {
-      getIdpedido();
-    }, 900);
+    if (seguimiento <= 4) {
+      const interval = setInterval(() => {
+        getInfo();
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
   }, []);
+
+  const labels = [
+    "Solicitado",
+    "Confirmado",
+    "En camino",
+    "Viajando",
+    "Finalizado",
+  ];
+  const customStyles = {
+    stepIndicatorSize: 25,
+    currentStepIndicatorSize: 30,
+    separatorStrokeWidth: 2,
+    currentStepStrokeWidth: 3,
+    stepStrokeCurrentColor: "#fe7013",
+    stepStrokeWidth: 3,
+    stepStrokeFinishedColor: "#fe7013",
+    stepStrokeUnFinishedColor: "#aaaaaa",
+    separatorFinishedColor: "#fe7013",
+    separatorUnFinishedColor: "#aaaaaa",
+    stepIndicatorFinishedColor: "#fe7013",
+    stepIndicatorUnFinishedColor: "#ffffff",
+    stepIndicatorCurrentColor: "#ffffff",
+    stepIndicatorLabelFontSize: 13,
+    currentStepIndicatorLabelFontSize: 13,
+    stepIndicatorLabelCurrentColor: "#fe7013",
+    stepIndicatorLabelFinishedColor: "#ffffff",
+    stepIndicatorLabelUnFinishedColor: "#aaaaaa",
+    labelColor: "#999999",
+    labelSize: 13,
+    currentStepLabelColor: "#fe7013",
+  };
+
+  const [expanded, setExpanded] = useState(true);
+  const [expanded2, setExpanded2] = useState(true);
+
+  const handlePress = () => setExpanded(!expanded);
+  const handlePress2 = () => setExpanded2(!expanded2);
+
+  const [puntos, setPuntos] = useState(5);
+  const [disableRatting, setDisableRatting] = useState(false);
+
+  const ValuePuntos = (ratting) => {
+    setPuntos(ratting);
+  };
+
+  const Calificar = async () => {
+    console.log("Algo");
+    const payloadAccount = {
+      puntos: puntos,
+      account: conductor.id,
+      realizado_by: infoViaje.id,
+    };
+
+    const payloadPedido = {
+      puntos: puntos,
+      pedido: id_pedido,
+      realizado_by: infoViaje.id,
+    };
+
+    // Registramos calificació al conductor
+    await API.post(`ratting/account/`, payloadAccount);
+    // Registramos calificació del pedido
+    await API.post(`ratting/order/`, payloadPedido);
+    setDisableRatting(true);
+
+    if (conductor.tokenPush !== "")
+      NotifiyPush(conductor.tokenPush, "El cliente ha calificado tu viaje!");
+    navigation.popToTop();
+  };
 
   return (
     <Container style={{ flex: 1 }}>
@@ -109,74 +262,95 @@ export default function Estado({ navigation }) {
         isHome={false}
         isLogin={false}
       />
-      {/* <Popup text="¿Aceptar pedido?" isVisible={isVisibleLoading} /> */}
-      <View>
+      <Popup
+        text={txt}
+        isVisible={isVisibleLoading}
+        pedido={id_pedido}
+        tokenPush={conductor.tokenPush}
+        conductor={conductor.id}
+        NotifiyPush={NotifiyPush}
+      />
+      {/* <View>
         <Image source={ICONOS.LOADING} style={styles.logo} resizeMode="cover" />
-      </View>
+      </View> */}
 
-      <View style={styles.container}>
-        <Popup text={txt} isVisible={isVisibleLoading} />
-        <Timeline
-          data={data}
-          circleSize={20}
-          circleColor="rgb(45,156,219)"
-          lineColor="rgb(45,156,219)"
-          timeContainerStyle={{ minWidth: 52, marginTop: 1 }}
-          timeStyle={{
-            textAlign: "center",
-            backgroundColor: "#ff9797",
-            color: "white",
-            padding: 5,
-            borderRadius: 13,
-          }}
-          descriptionStyle={{ color: "gray" }}
-          options={{
-            style: { paddingTop: 10 },
-          }}
-        />
-        <View style={styles.conductor}>
-          <List>
-            <ListItem avatar>
-              {/* <Left>
-                <Thumbnail
-                  source={{
-                    uri:
-                      "https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTWC-6XDDB_jWPl8YFNKwWyZJj7Shyfrawao5xGuPw8CbLkMPuo&usqp=CAU",
-                  }}
-                  style={styles.logo}
-                />
-              </Left> */}
-              {/* <Text>Placa {"\n"}153E</Text>
-              <Text></Text>
-              <TouchableHighlight
-                onPress={() => {
-                  Linking.openURL("tel:3143405335");
+      <List.Section>
+        <List.Accordion
+          title="Info. del viaje"
+          left={(props) => <List.Icon {...props} icon="folder" />}
+          expanded={expanded}
+          onPress={handlePress}
+        >
+          <Text>Creado el: {infoViaje.creado}</Text>
+          <Text>Dirección: {infoViaje.direccion}</Text>
+          <Text>Observación: {infoViaje.observacion}</Text>
+          <Text>Telefono alternativo: {infoViaje.telefono}</Text>
+        </List.Accordion>
+        {conductor.nombre !== "" && (
+          <List.Accordion
+            title="Conductor"
+            left={(props) => <List.Icon {...props} icon="folder" />}
+          >
+            {/* <Text>Aún estamos buscando un conductor disponible</Text> */}
+            <View>
+              <Avatar.Image
+                size={55}
+                source={{
+                  uri: conductor.photo,
                 }}
-              >
-                <Image
-                  source={{
-                    uri:
-                      "https://image.freepik.com/vector-gratis/icono-telefono-boton-miniatura_24911-30424.jpg",
-                  }}
-                  style={styles.logo}
-                />
-              </TouchableHighlight>
-              <TouchableHighlight onPress={HandleCalificar}>
-                <Image
-                  source={{
-                    uri:
-                      "https://previews.123rf.com/images/yulyashka/yulyashka1705/yulyashka170500061/78013894-icono-de-satisfacci%C3%B3n-del-cliente-concepto-de-negocio-y-finanzas.jpg",
-                  }}
-                  style={styles.logo}
-                />
-              </TouchableHighlight>
-              <Right>
-                <Text note>LLega {"\n"}3:43 pm</Text>
-              </Right> */}
-            </ListItem>
-          </List>
-        </View>
-      </View>
+              />
+              <Text>Placa: {conductor.placa}</Text>
+              <Text>Nombre: {conductor.nombre}</Text>
+              <Text>Tiempo de espera: {conductor.tiempo}</Text>
+            </View>
+          </List.Accordion>
+        )}
+        <List.Accordion
+          title="Seguimiento"
+          left={(props) => <List.Icon {...props} icon="folder" />}
+          expanded={expanded2}
+          onPress={handlePress2}
+        >
+          <StepIndicator
+            customStyles={customStyles}
+            currentPosition={seguimiento}
+            labels={labels}
+          />
+        </List.Accordion>
+
+        {seguimiento >= 2 && seguimiento <= 4 && (
+          <View>
+            <Text>{"\n Muy demorado?"}</Text>
+            <Picker
+              mode="dropdown"
+              style={{ marginLeft: 10, width: 150 }}
+              selectedValue={seguiEstado}
+              onValueChange={(itemValue, itemIndex) =>
+                Changed2Estado(itemValue, conductor.id)
+              }
+            >
+              <Picker.Item key="0" label="Seleccione estado" value="0" />
+              <Picker.Item key="8" label="Cancelar" value="8" />
+            </Picker>
+          </View>
+        )}
+        {seguimiento === 5 && (
+          <View style={styles.butt}>
+            <AirbnbRating
+              count={5}
+              reviews={["Muy Mal", "Mal", "Regular", "Bien", "Excelente"]}
+              defaultRating={puntos}
+              size={20}
+              isDisabled={disableRatting}
+              onFinishRating={ValuePuntos}
+            />
+            <Text>{"\n"}</Text>
+            {disableRatting === false && (
+              <AppButton action={Calificar} title="Calificar Servicio" />
+            )}
+          </View>
+        )}
+      </List.Section>
     </Container>
   );
 }
@@ -194,5 +368,11 @@ const styles = StyleSheet.create({
   conductor: {
     alignContent: "flex-end",
     justifyContent: "flex-end",
+  },
+  butt: {
+    marginTop: 30,
+    alignItems: "center",
+    color: "#FFFFFF",
+    fontSize: 15,
   },
 });

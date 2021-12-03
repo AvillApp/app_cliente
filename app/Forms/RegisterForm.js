@@ -14,6 +14,7 @@ import ErrorMessage from "../Lib/plug/Error";
 import validateNumber from "../Lib/utils/Number";
 import { MARCA } from "../Constans/imagenes";
 import { api } from "../Lib/utils/db";
+import API from "../Lib/utils/db";
 import axios from "axios";
 
 export default function RegisterForm({ navigation }) {
@@ -28,39 +29,35 @@ export default function RegisterForm({ navigation }) {
     const id_user = await AsyncStorage.getItem("id_user");
     const location = await AsyncStorage.getItem("location");
 
-    console.log("Valor de location", location)
-    console.log("Valor de user", id_user)
+    console.log("Valor de location", location);
+    console.log("Valor de user", id_user);
     // if (id_user){
     //   if(location)
     //     navigation.navigate("app");
     //   else
-    //     navigation.navigate("Aviso"); 
-    // }  
+    //     navigation.navigate("Aviso");
+    // }
   };
   obtenerUser();
 
+  // const obtenerID = async () => {
+  //   const response = await API.get(`accounts/?search=${telefono}&format=json`);
+  //   // const infoUser = await fetch(
+  //   //   `${api}personas/buscar/${telefono}?format=json`
+  //   // );
+  //   // const resUser = await infoUser.json();
 
-  const obtenerID = async () => {
+  //   //let data;
+  //   response.data.map((dt) => {
+  //     data = dt.id;
+  //   });
 
-    const infoUser = await fetch(
-      `${api}personas/buscar/${telefono}?format=json`
-    );
-    const resUser = await infoUser.json();
-    
-
-    let data;
-    resUser.map(dt => {
-      data = dt.id;
-     
-    })
-
-    //console.log("información del ID: ", data)
-    await AsyncStorage.setItem("id_user", data.toString());
-    await AsyncStorage.setItem("nombre", nombre);
-    //navigation.navigate("Aviso");
-    navigation.navigate("app");
-
-  }
+  //   //console.log("información del ID: ", data)
+  //   await AsyncStorage.setItem("id_user", data.toString());
+  //   await AsyncStorage.setItem("nombre", nombre);
+  //   //navigation.navigate("Aviso");
+  //   navigation.navigate("app");
+  // };
 
   const handleRegister = async () => {
     setIsVisibleLoading(true);
@@ -70,21 +67,16 @@ export default function RegisterForm({ navigation }) {
         setError(false);
 
         const persona = {
-          'name': nombre,
-          'last_name': apellidos,
-          'phone': telefono,
-          'type_persona': 1,
-        }
-        
-        axios.post(`${api}personas/create/`, persona)
-        .then(response => {
-
-            obtenerID() 
-          
-        }).catch(error=>{
-           setError(true);
-        })
-        
+          name: nombre,
+          last_name: apellidos,
+          phone: telefono,
+          type_persona: 1,
+        };
+        console.log(persona);
+        const response = await API.post(`accounts/`, persona);
+        await AsyncStorage.setItem("id_user", response.data.id.toString());
+        await AsyncStorage.setItem("nombre", nombre);
+        navigation.navigate("app");
       } else {
         setError(true);
         setmsgError("Teléfono inválido");

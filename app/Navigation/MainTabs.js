@@ -31,33 +31,6 @@ const MainTabs = createBottomTabNavigator(
         ),
       },
     },
-    // Cases: {
-    //   screen: CasesStack,
-    //   navigationOptions: {
-    //     tabBarLabel: "Casos",
-    //     tabBarIcon: ({ tintColor }) => (
-    //       <Icon
-    //         type="MaterialCommunityIcons"
-    //         name="map-search"
-    //         style={{ fontSize: 30, color: "#287AFF" }}
-    //       />
-    //     ),
-    //   },
-    // },
-
-    // Chat: {
-    //   screen: ChatStack,
-    //   navigationOptions: {
-    //     tabBarLabel: "Chat",
-    //     tabBarIcon: ({ tintColor }) => (
-    //       <Icon
-    //         type="MaterialCommunityIcons"
-    //         name="chat"
-    //         style={{ fontSize: 30, color: "#287AFF" }}
-    //       />
-    //     ),
-    //   },
-    // },
   },
   {
     initialRouteName: "Portal",

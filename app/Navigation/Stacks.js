@@ -4,6 +4,7 @@ import Portal from "../Screens/Account/Portal";
 import Confirmar from "../Screens/Viajes/Confirmar";
 import Estado from "../Screens/Viajes/Estado";
 import Calificar from "../Screens/Viajes/Calificar";
+import Orders from "../Screens/Viajes/Orders";
 
 export const navOptionHandler = (navigation) => ({
   header: null,
@@ -31,6 +32,21 @@ export const PortalStack = createStackNavigator({
 export const ViajesStack = createStackNavigator({
   Viajes: {
     screen: Viajes,
+    navigationOptions: navOptionHandler,
+  },
+  Estado: {
+    screen: Estado,
+    navigationOptions: navOptionHandler,
+  },
+  Inicio: {
+    screen: Portal,
+    navigationOptions: navOptionHandler,
+  },
+});
+
+export const OrderStack = createStackNavigator({
+  Orders: {
+    screen: Orders,
     navigationOptions: navOptionHandler,
   },
   Estado: {
